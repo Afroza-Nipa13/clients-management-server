@@ -1,10 +1,11 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+require("dotenv").config()
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const app =express();
-require("dotenv").config()
 const port =process.env.PORT || 3000;
 
+// middleware
 app.use(cors());
 app.use(express.json())
 
@@ -23,14 +24,47 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
+    const userCollection =client.db("userDB").collection("users")
 
 
 
+  // user related api
 
+  app.get('/users', async(req, res) =>{
+    const users = req.body;
+    const result = await userCollection.find().toArray()
+    res.send(result)
+  })
+
+  app.post('/users', async(req, res)=>{
+    const userProfile =req.body;
+    const result = await userCollection.insertOne(userProfile)
+    res.send(result)
+  })
+
+  app.patch('/users', async(req, res)=>{
+    const {email,lastSignInTime} =req.body;
+    const filter = { email: email}
+    const docUpdate = {
+      $set : {
+        lastSignInTime:lastSignInTime
+      }
+    }
+    const result = await userCollection.updateOne(filter, docUpdate)
+    res.send(result)
+
+  })
+
+  app.delete('/users/:id', async (req, res)=>{
+    const id =req.params.id;
+    const query = {_id : new ObjectId(id)}
+    const result = await userCollection.deleteOne(query);
+    res.send(result)
+  })
     
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
